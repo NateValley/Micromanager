@@ -18,7 +18,7 @@ CHANNEL_ID = int(channel_id_str)
 CHECK_INTERVAL = 1		# in seconds
 
 async def handle_ping(request):
-	return web.Response(text="Micromanager is alive!")
+	return web.Response(text="Micromanager is alive frfr!")
 
 async def start_web_server():
 	app = web.Application()
@@ -87,4 +87,4 @@ async def main():
 	await start_web_server()
 	await client.start(TOKEN)
 
-client.run(TOKEN)
+asyncio.run(main())
