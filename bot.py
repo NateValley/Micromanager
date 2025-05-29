@@ -3,9 +3,10 @@ import aiohttp
 import asyncio
 import os
 
+from aiohttp import web
+
 from dotenv import load_dotenv
 load_dotenv()
-
 
 TOKEN = os.getenv("TOKEN")
 
@@ -15,6 +16,17 @@ if not channel_id_str:
 CHANNEL_ID = int(channel_id_str)
 
 CHECK_INTERVAL = 1		# in seconds
+
+async def handle_ping(request):
+	return web.Response(text="Micromanager is alive!")
+
+async def start_web_server():
+	app = web.Application()
+	app.router.add_get("/", handle_ping)
+	runner = web.AppRunner(app)
+	await runner.setup()
+	site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 8080)))
+	await site.start()
 
 intents = discord.Intents.default()
 class InvasionClient(discord.Client):
@@ -70,5 +82,9 @@ async def invasion_loop(client):
 @client.event
 async def on_ready():
 	print(f'Logged in as {client.user}')
+
+async def main():
+	await start_web_server()
+	await client.start(TOKEN)
 
 client.run(TOKEN)
