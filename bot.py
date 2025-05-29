@@ -80,7 +80,7 @@ async def invasion_loop(client):
 
 async def create_invasion_embed(district, invasion_info):
 	cog = invasion_info.get("type", "Unknown Cog")
-	progress = invasion_info/get("progress", "0/0")
+	progress = invasion_info.get("progress", "0/0")
 	current, total = progress.split("/")
 	remaining = int(total) - int(current)
 	progress_percentage = int(current) / int(total) * 100
@@ -94,7 +94,7 @@ async def create_invasion_embed(district, invasion_info):
 
 	# Add images or thumbnails with URLs
 	# embed.set_thumbnail(url="some_image_url")
-	embed.set_footer(text="Current Invasions in TTR")
+	embed.set_footer(text="Current Invasion in TTR")
 	return embed
 
 @client.event
