@@ -40,44 +40,62 @@ async def fetch_invasions():
 		async with session.get("https://www.toontownrewritten.com/api/invasions") as resp:
 			return await resp.json()
 
-invasion_message = None  # single discord.Message for all invasions
+invasion_messages = {}  # district => discord.Message
 
 async def invasion_loop(client):
-	global invasion_message
+	global invasion_messages
 	await client.wait_until_ready()
 	channel = client.get_channel(CHANNEL_ID)
 
 	while not client.is_closed():
 		data = await fetch_invasions()
 		invasions = data.get("invasions", {})
+		active_districts = set(invasions.keys())
 
-		if invasions:
-			# Build one big string with all invasions info
-			combined_content = ""
-			for district, invasion_info in invasions.items():
-				cog = invasion_info.get("type", "Unknown Cog")
-				progress = invasion_info.get("progress", "0/0")
-				current, total = progress.split("/")
-				remaining = int(total) - int(current)
-				progress_percentage = int(current) / int(total) * 100
-				combined_content += f"**{cog}** invasion in **{district}**! `{remaining}` left. ({progress_percentage:.1f}%)\n"
+		# Handle current invasions
+		for district, invasion_info in invasions.items():
+			embed = await create_invasion_embed(district, invasion_info)
 
-			if invasion_message is None:
-				# Send first message
-				invasion_message = await channel.send(combined_content)
+			if district not in invasion_messages:
+				# Send new embed
+				msg = await channel.send(embed=embed)
+				invasion_messages[district] = msg
 			else:
-				# Edit existing message if content changed
-				if invasion_message.content != combined_content:
-					await invasion_message.edit(content=combined_content)
+				# Update only if content has changed
+				msg = invasion_messages[district]
+				old_embed = msg.embeds[0].to_dict() if msg.embeds else {}
+				if old_embed != embed.to_dict():
+					await msg.edit(embed=embed)
 
-		else:
-			# No invasions active, delete message if exists
-			if invasion_message is not None:
-				await invasion_message.delete()
-				invasion_message = None
+		# Handle ended invasions
+		ended_districts = [d for d in invasion_messages if d not in active_districts]
+		for district in ended_districts:
+			try:
+				await invasion_messages[district].delete()
+			except discord.NotFound:
+				pass  # message already deleted
+			del invasion_messages[district]
 
 		await asyncio.sleep(CHECK_INTERVAL)
 
+async def create_invasion_embed(district, invasion_info):
+	cog = invasion_info.get("type", "Unknown Cog")
+	progress = invasion_info/get("progress", "0/0")
+	current, total = progress.split("/")
+	remaining = int(total) - int(current)
+	progress_percentage = int(current) / int(total) * 100
+
+	embed = discord.Embed(
+		title=f"{cog} Invasion in {district}",
+		color=discord.Color.red()
+	)
+	embed.add_field(name="Remaining", value=f"{remaining} Cogs left", inline=True)
+	embed.add_field(name="Progress", value=f"{progress_percentage:.1f}%", inline=True)
+
+	# Add images or thumbnails with URLs
+	# embed.set_thumbnail(url="some_image_url")
+	embed.set_footer(text="Current Invasions in TTR")
+	return embed
 
 @client.event
 async def on_ready():
