@@ -48,34 +48,38 @@ async def invasion_loop(client):
 	channel = client.get_channel(CHANNEL_ID)
 
 	while not client.is_closed():
-		data = await fetch_invasions()
-		invasions = data.get("invasions", {})
-		active_districts = set(invasions.keys())
+		try:
+			data = await fetch_invasions()
+			invasions = data.get("invasions", {})
+			active_districts = set(invasions.keys())
 
-		# Handle current invasions
-		for district, invasion_info in invasions.items():
-			embed = await create_invasion_embed(district, invasion_info)
+			# Handle current invasions
+			for district, invasion_info in invasions.items():
+				embed = await create_invasion_embed(district, invasion_info)
 
-			if district not in invasion_messages:
-				# Send new embed
-				msg = await channel.send(embed=embed)
-				invasion_messages[district] = msg
-			else:
-				# Update only if content has changed
-				msg = invasion_messages[district]
-				old_embed = msg.embeds[0].to_dict() if msg.embeds else {}
-				if old_embed != embed.to_dict():
-					await msg.edit(embed=embed)
+				if district not in invasion_messages:
+					# Send new embed
+					msg = await channel.send(embed=embed)
+					invasion_messages[district] = msg
+				else:
+					# Update only if content has changed
+					msg = invasion_messages[district]
+					old_embed = msg.embeds[0].to_dict() if msg.embeds else {}
+					if old_embed != embed.to_dict():
+						await msg.edit(embed=embed)
 
-		# Handle ended invasions
-		ended_districts = [d for d in invasion_messages if d not in active_districts]
-		for district in ended_districts:
-			try:
-				await invasion_messages[district].delete()
-			except discord.NotFound:
-				pass  # message already deleted
-			del invasion_messages[district]
-
+			# Handle ended invasions
+			ended_districts = [d for d in invasion_messages if d not in active_districts]
+			for district in ended_districts:
+				try:
+					await invasion_messages[district].delete()
+				except discord.NotFound:
+					pass  # message already deleted
+				del invasion_messages[district]
+		
+		except Exception as e:
+			print(f"❌ Invasion Loop Error! {e}")
+			
 		await asyncio.sleep(CHECK_INTERVAL)
 
 async def create_invasion_embed(district, invasion_info):
