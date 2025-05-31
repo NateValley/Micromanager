@@ -103,12 +103,13 @@ async def create_invasion_embed(district, invasion_info):
 	start_time = format_start_time(start_timestamp)
 
 	embed = discord.Embed(
-		title=f"{cog} Invasion in {district}",
+		title=f"{cog} Invasion!",
 		color=discord.Color.red()
 	)
 
-	embed.set_thumbnail(url=get_cog_image_url(cog))
+	embed.set_image(url=get_cog_image_url(cog))
 
+	embed.add_field(name="District", value={district}, inline=False)
 	embed.add_field(name="Remaining", value=f"{remaining} Cogs left", inline=True)
 	embed.add_field(name="Progress", value=f"{progress_percentage:.1f}%", inline=True)
 
