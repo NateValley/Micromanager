@@ -3,6 +3,9 @@ import aiohttp
 import asyncio
 import os
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from aiohttp import web
 
 from dotenv import load_dotenv
@@ -17,6 +20,8 @@ CHANNEL_ID = int(channel_id_str)
 
 CHECK_INTERVAL = 1		# in seconds
 
+# ===========================================
+
 async def handle_ping(request):
 	return web.Response(text="Micromanager is alive frfr!")
 
@@ -27,6 +32,8 @@ async def start_web_server():
 	await runner.setup()
 	site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 8080)))
 	await site.start()
+
+# ===========================================
 
 intents = discord.Intents.default()
 class InvasionClient(discord.Client):
@@ -46,6 +53,8 @@ async def invasion_loop(client):
 	global invasion_messages
 	await client.wait_until_ready()
 	channel = client.get_channel(CHANNEL_ID)
+
+	await clear_bot_messages(channel)
 
 	while not client.is_closed():
 		try:
@@ -83,23 +92,52 @@ async def invasion_loop(client):
 		await asyncio.sleep(CHECK_INTERVAL)
 
 async def create_invasion_embed(district, invasion_info):
-	cog = invasion_info.get("type", "Unknown Cog")
+	cog = invasion_info.get("type", "Unknown Cog").replace("\u0003", "").strip()
 	progress = invasion_info.get("progress", "0/0")
+	start_timestamp = invasion_info.get("startTimestamp", 0)
+
 	current, total = progress.split("/")
 	remaining = int(total) - int(current)
 	progress_percentage = int(current) / int(total) * 100
+
+	start_time = format_start_time(start_timestamp)
 
 	embed = discord.Embed(
 		title=f"{cog} Invasion in {district}",
 		color=discord.Color.red()
 	)
+
+	embed.set_thumbnail(url=get_cog_image_url(cog))
+
 	embed.add_field(name="Remaining", value=f"{remaining} Cogs left", inline=True)
 	embed.add_field(name="Progress", value=f"{progress_percentage:.1f}%", inline=True)
 
 	# Add images or thumbnails with URLs
 	# embed.set_thumbnail(url="some_image_url")
-	embed.set_footer(text="Current Invasion in TTR")
+	embed.set_footer(text=f"Started at {start_time}")
 	return embed
+
+async def clear_bot_messages(channel):
+	async for msg in channel.history(limit=100):
+		if msg.author == client.user:
+			try:
+				await msg.delete()
+			except discord.NotFound:
+				pass
+
+
+# ===========================================
+
+def get_cog_image_url(cog_name):
+	safe_name = cog_name.lower().replace(" ", "_")
+	return f"https://raw.githubusercontent.com/NateValley/Micromanager/main/images/{safe_name}.png"
+
+def format_start_time(unix_timestamp):
+	dt = datetime.fromtimestamp(unix_timestamp, tz=ZoneInfo("America/Los_Angeles"))
+	return dt.strftime("%Y-%m-%d %I:%M %p %Z")
+
+# ===========================================
+
 
 @client.event
 async def on_ready():
