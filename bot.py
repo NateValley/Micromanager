@@ -104,17 +104,23 @@ async def create_invasion_embed(district, invasion_info):
 
 	embed = discord.Embed(
 		title=f"{cog} Invasion!",
-		color=discord.Color.red()
+		color=discord.Color.green()
 	)
 
 	embed.set_image(url=get_cog_image_url(cog))
 
-	embed.add_field(name="District", value={district}, inline=False)
+	embed.add_field(name="District", value=f"{district}", inline=False)
+
 	embed.add_field(name="Remaining", value=f"{remaining} Cogs left", inline=True)
 	embed.add_field(name="Progress", value=f"{progress_percentage:.1f}%", inline=True)
-
-	# Add images or thumbnails with URLs
-	# embed.set_thumbnail(url="some_image_url")
+	
+	if progress_percentage < 50:
+		embed.color = discord.Color.green()
+	elif progress_percentage >= 50 and progress_percentage < 85:
+		embed.color = discord.Color.yellow()
+	else:
+		embed.color = discord.Color.red()
+	
 	embed.set_footer(text=f"Started at {start_time}")
 	return embed
 
@@ -135,7 +141,7 @@ def get_cog_image_url(cog_name):
 
 def format_start_time(unix_timestamp):
 	dt = datetime.fromtimestamp(unix_timestamp, tz=ZoneInfo("America/Los_Angeles"))
-	return dt.strftime("%Y-%m-%d %I:%M %p %Z")
+	return dt.strftime("%I:%M %p %Z")
 
 # ===========================================
 
