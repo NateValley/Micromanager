@@ -105,7 +105,7 @@ async def create_invasion_embed(district, invasion_info):
 	start_time = format_start_time(start_timestamp)
 
 	embed = discord.Embed(
-		title=f"⚙️ {cog} Invasion! ⚙️ 🌎 Located in {district}! 🌎",
+		title=f"⚙️ {cog} Invasion! ⚙️\n🌎 Located in {district}! 🌎",
 		color=discord.Color.green()
 	)
 
