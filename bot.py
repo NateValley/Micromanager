@@ -146,7 +146,7 @@ def format_start_time(unix_timestamp):
 def fix_cog_name(cog_name):
 	if cog_name == "Glad Hander":
 		cog_name = "Glad Handler"
-		return cog_name
+	return cog_name
 
 # ===========================================
 
