@@ -93,6 +93,8 @@ async def invasion_loop(client):
 
 async def create_invasion_embed(district, invasion_info):
 	cog = invasion_info.get("type", "Unknown Cog").replace("\u0003", "").strip()
+	cog = fix_cog_name(cog)
+	
 	progress = invasion_info.get("progress", "0/0")
 	start_timestamp = invasion_info.get("startTimestamp", 0)
 
@@ -103,13 +105,11 @@ async def create_invasion_embed(district, invasion_info):
 	start_time = format_start_time(start_timestamp)
 
 	embed = discord.Embed(
-		title=f"{cog} Invasion!",
+		title=f"⚙️ {cog} Invasion! ⚙️ 🌎 Located in {district}! 🌎",
 		color=discord.Color.green()
 	)
 
 	embed.set_image(url=get_cog_image_url(cog))
-
-	embed.add_field(name="District", value=f"{district}", inline=False)
 
 	embed.add_field(name="Remaining", value=f"{remaining} Cogs left", inline=True)
 	embed.add_field(name="Progress", value=f"{progress_percentage:.1f}%", inline=True)
@@ -142,6 +142,11 @@ def get_cog_image_url(cog_name):
 def format_start_time(unix_timestamp):
 	dt = datetime.fromtimestamp(unix_timestamp, tz=ZoneInfo("America/Los_Angeles"))
 	return dt.strftime("%I:%M %p %Z")
+
+def fix_cog_name(cog_name):
+	if cog_name is "Glad Hander":
+		cog_name = "Glad Handler"
+		return cog_name
 
 # ===========================================
 
