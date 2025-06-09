@@ -2,11 +2,13 @@ import discord
 import aiohttp
 import asyncio
 import os
+import socket
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from aiohttp import web
+from aiohttp import TCPConnector
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -18,7 +20,7 @@ if not channel_id_str:
 	raise ValueError("CHANNEL_ID is not set!")
 CHANNEL_ID = int(channel_id_str)
 
-CHECK_INTERVAL = 1		# in seconds
+CHECK_INTERVAL = 5		# in seconds
 
 # ===========================================
 
@@ -43,7 +45,8 @@ class InvasionClient(discord.Client):
 client = InvasionClient(intents=intents)
 
 async def fetch_invasions():
-	async with aiohttp.ClientSession() as session:
+	connector = TCPConnector(ttl_dns_cache=300)
+	async with aiohttp.ClientSession(connector=connector) as session:
 		async with session.get("https://www.toontownrewritten.com/api/invasions") as resp:
 			return await resp.json()
 
@@ -52,7 +55,7 @@ invasion_messages = {}  # district => discord.Message
 async def invasion_loop(client):
 	global invasion_messages
 	await client.wait_until_ready()
-	channel = client.get_channel(CHANNEL_ID)
+	channel = await client.fetch_channel(CHANNEL_ID)
 
 	await clear_bot_messages(channel)
 
@@ -73,8 +76,7 @@ async def invasion_loop(client):
 				else:
 					# Update only if content has changed
 					msg = invasion_messages[district]
-					old_embed = msg.embeds[0].to_dict() if msg.embeds else {}
-					if old_embed != embed.to_dict():
+					if embeds_are_different(msg.embeds[0], embed):
 						await msg.edit(embed=embed)
 
 			# Handle ended invasions
@@ -147,6 +149,13 @@ def fix_cog_name(cog_name):
 	if cog_name == "Glad Hander":
 		cog_name = "Glad Handler"
 	return cog_name
+
+def embeds_are_different(e1: discord.Embed, e2: discord.Embed):
+	return (
+		e1.title != e2.title or
+		e1.description != e2.description or
+		e1.fields != e2.fields
+	)
 
 # ===========================================
 
